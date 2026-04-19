@@ -1,1 +1,244 @@
-<h1> hello </h1>h1>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音频对比与恢复效果展示</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .waveform-container {
+            background: #111827;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 14px;
+        }
+        .spectrogram-container {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .waveform-container h6, .spectrogram-container h6 {
+            color: #9ca3af;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+        /* Canvas 宽度由 CSS 控制，JS 负责物理像素 */
+        .waveform-canvas {
+            display: block;
+            width: 100%;
+            height: 110px;
+            border-radius: 4px;
+            background: #0f172a;
+        }
+        .spectrogram-canvas {
+            display: block;
+            width: 100%;
+            height: 160px;
+            border-radius: 4px;
+            background: #0d1117;
+        }
+        .card {
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .audio-info p {
+            font-size: 0.82rem;
+        }
+        @media (max-width: 768px) {
+            .waveform-canvas {
+                height: 80px;
+            }
+            .spectrogram-canvas {
+                height: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fas fa-music me-2"></i>音频对比与恢复效果展示</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="#home">首页</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#comparison">音频对比</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#about">关于</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section id="home" class="mb-5">
+        <div class="text-center mb-4">
+            <h1 class="display-4 fw-bold text-primary">
+                <i class="fas fa-wave-square me-2"></i>音频对比与恢复效果展示
+            </h1>
+            <p class="lead text-muted">专业的音频质量评估与对比工具</p>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-sliders-h me-2"></i>控制面板
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="sampleSelect" class="form-label fw-bold">
+                                <i class="fas fa-file-audio me-2"></i>选择测试样本
+                            </label>
+                            <select class="form-select" id="sampleSelect">
+                                <option value="样本1">🎵 样本 1</option>
+                                <option value="样本2">🎵 样本 2</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-chart-line me-2"></i>分析选项
+                            </label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="autoPlay">
+                                <label class="form-check-label" for="autoPlay">自动播放对比</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button class="btn btn-primary me-md-2" id="loadSampleBtn">
+                        <i class="fas fa-sync-alt me-2"></i>加载样本
+                    </button>
+                    <button class="btn btn-outline-secondary" id="resetBtn">
+                        <i class="fas fa-redo me-2"></i>重置
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!--
+        <div class="row mb-4">
+            ...
+        </div>
+        -->
+    </section>
+
+    <section id="comparison" class="mb-5">
+        <h2 class="mb-4 text-center"><i class="fas fa-columns me-2"></i>三栏音频对比</h2>
+        <div class="row">
+
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-ear me-2"></i>耳内音频</span>
+                        <span class="badge bg-dark">原始</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="audio-player mb-3">
+                            <audio id="inEarAudio" controls class="w-100 mb-2">
+                                <source src="assets/audio/in-ear/样本1.wav" type="audio/wav">
+                            </audio>
+                            <div class="audio-controls">
+                                <button class="btn btn-sm btn-outline-warning" id="inEarPlayBtn"><i class="fas fa-play"></i> 播放</button>
+                                <button class="btn btn-sm btn-outline-secondary" id="inEarPauseBtn"><i class="fas fa-pause"></i> 暂停</button>
+                                <button class="btn btn-sm btn-outline-info" id="inEarDownloadBtn"><i class="fas fa-download"></i> 下载</button>
+                            </div>
+                        </div>
+                        <div class="waveform-container">
+                            <h6>时域波形</h6>
+                            <canvas id="inEarWaveform" class="waveform-canvas"></canvas>
+                        </div>
+                        <div class="spectrogram-container">
+                            <h6>实时频谱</h6>
+                            <canvas id="inEarSpectrogram" class="spectrogram-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-tools me-2"></i>恢复音频</span>
+                        <span class="badge bg-light text-success">已处理</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="audio-player mb-3">
+                            <audio id="restoredAudio" controls class="w-100 mb-2">
+                                <source src="assets/audio/restored/样本1.wav" type="audio/wav">
+                            </audio>
+                            <div class="audio-controls">
+                                <button class="btn btn-sm btn-outline-success" id="restoredPlayBtn"><i class="fas fa-play"></i> 播放</button>
+                                <button class="btn btn-sm btn-outline-secondary" id="restoredPauseBtn"><i class="fas fa-pause"></i> 暂停</button>
+                                <button class="btn btn-sm btn-outline-info" id="restoredDownloadBtn"><i class="fas fa-download"></i> 下载</button>
+                            </div>
+                        </div>
+                        <div class="waveform-container">
+                            <h6>时域波形</h6>
+                            <canvas id="restoredWaveform" class="waveform-canvas"></canvas>
+                        </div>
+                        <div class="spectrogram-container">
+                            <h6>实时频谱</h6>
+                            <canvas id="restoredSpectrogram" class="spectrogram-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-medal me-2"></i>金标准</span>
+                        <span class="badge bg-light text-info">参考</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="audio-player mb-3">
+                            <audio id="goldAudio" controls class="w-100 mb-2">
+                                <source src="assets/audio/gold-standard/样本1.wav" type="audio/wav">
+                            </audio>
+                            <div class="audio-controls">
+                                <button class="btn btn-sm btn-outline-info" id="goldPlayBtn"><i class="fas fa-play"></i> 播放</button>
+                                <button class="btn btn-sm btn-outline-secondary" id="goldPauseBtn"><i class="fas fa-pause"></i> 暂停</button>
+                                <button class="btn btn-sm btn-outline-info" id="goldDownloadBtn"><i class="fas fa-download"></i> 下载</button>
+                            </div>
+                        </div>
+                        <div class="waveform-container">
+                            <h6>时域波形</h6>
+                            <canvas id="goldWaveform" class="waveform-canvas"></canvas>
+                        </div>
+                        <div class="spectrogram-container">
+                            <h6>实时频谱</h6>
+                            <canvas id="goldSpectrogram" class="spectrogram-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <footer class="text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>音频对比与恢复效果展示</h5>
+                    <p class="mb-0">专业的音频质量评估与对比工具</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-1"><i class="fas fa-code me-2"></i>GitHub Pages 托管版本</p>
+                    <p class="small text-muted mb-0">© 2026 音频对比系统 | Powered by HTML5 & JavaScript</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/viz.js"></script>
+</body>
+</html>
