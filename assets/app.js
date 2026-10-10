@@ -348,6 +348,12 @@
     if (graphBroken || srcMap.has(a)) return;
     var AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) { graphBroken = true; return; }
+    /* Chromium silences a MediaElementSourceNode whose media is treated as
+       cross-origin. A file:// page is an opaque origin, so opening this page
+       straight off disk would mute every clip. Play those natively instead. */
+    var proto = "";
+    try { proto = new URL(a.src, location.href).protocol; } catch (e) { proto = ""; }
+    if (proto === "file:") { graphBroken = true; return; }
     try {
       if (!audioCtx) {
         audioCtx = new AC();
